@@ -10,7 +10,19 @@
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#ffffff",
+      "plugins": [
+        [
+          "react-native-ble-plx",
+          {
+            "modes": [
+              "central"
+            ],
+            "bluetoothAlwaysPermission": "Allow $(PRODUCT_NAME) to connect to devices",
+            "bluetoothPeripheralPermission": "Allow $(PRODUCT_NAME) to connect to devices"
+          }
+        ]
+      ]
     },
     "ios": {
       "supportsTablet": true
@@ -19,10 +31,14 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "package": "com.anonymous.myapp"
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      "react-native-ble-plx"
+    ]
   }
 }
