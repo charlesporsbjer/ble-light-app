@@ -13,7 +13,9 @@ import Slider from "@react-native-community/slider";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
 import { useNavigation } from "@react-navigation/native";
 import colors from "../components/colors";
-import { BleManager } from "react-native-ble-plx";
+// Only import BleManager on mobile
+import { Platform } from "react-native";
+import { webBleSend } from "../components/webBleHelper"; // Import your web BLE send function
 
 const daysOfWeek = [
   "Monday",
@@ -26,12 +28,26 @@ const daysOfWeek = [
 ];
 
 export default function SchedulerScreen({ route }) {
-  const bleDevice = route.params?.bleDevice;
-  const manager = new BleManager(); // Initialize BLE manager instance
+  // Check if running in React Native (mobile)
+  const isMobileApp = Platform.OS === "ios" || Platform.OS === "android";
+  // Check if running in browser
+  const isWeb = typeof window !== "undefined" && !!window.navigator;
+
+  // Only require BleManager and instantiate on mobile
+  let manager = null;
+  if (isMobileApp) {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { BleManager } = require("react-native-ble-plx");
+    manager = new BleManager();
+  }
+
+  const {
+    bleDevice,
+    currentRedIntensity = 0,
+    currentSunlightIntensity = 0,
+  } = route.params || {};
 
   // Receive the current intensity as reference but do NOT override schedule
-  const currentRedIntensity = route.params?.currentRedIntensity || 0;
-  const currentSunlightIntensity = route.params?.currentSunlightIntensity || 0;
 
   const [schedule, setSchedule] = useState({
     redLightStart: null,
@@ -58,9 +74,11 @@ export default function SchedulerScreen({ route }) {
   const navigation = useNavigation();
 
   useEffect(() => {
-    // Cleanup BLE manager when the component unmounts
+    // Cleanup BLE manager when the component unmounts (mobile only)
     return () => {
-      manager.destroy();
+      if (isMobileApp && manager) {
+        manager.destroy();
+      }
     };
   }, []);
 
@@ -94,13 +112,9 @@ export default function SchedulerScreen({ route }) {
 
   const handleSaveSchedule = async () => {
     try {
-      if (!bleDevice) throw new Error("No BLE device connected.");
-
-      const timeNow = Math.floor(Date.now() / 1000); // Example: 1711653475123
+      const timeNow = Math.floor(Date.now() / 1000);
       const daylightSavingsTime = new Date().getTimezoneOffset() < 0 ? 1 : 0;
-      const timeZoneOffsetHrs = new Date().getTimezoneOffset() / -60; // Example: -5 for EST
-
-      setSchedule({ ...schedule });
+      const timeZoneOffsetHrs = new Date().getTimezoneOffset() / -60;
 
       const payload = {
         ...schedule,
@@ -113,34 +127,44 @@ export default function SchedulerScreen({ route }) {
       const payloadString = JSON.stringify(payload);
       console.log("Payload: ", payloadString);
 
-      // Connect to the BLE device
+      if (isWeb) {
+        await webBleSend(payloadString);
+        return;
+      }
+
+      if (!bleDevice) throw new Error("No BLE device connected.");
+      if (!manager) throw new Error("BLE manager not initialized.");
+
+      // Native BLE logic (as you already have)
       const connectedDevice = await manager.connectToDevice(bleDevice.id);
-      console.log("Connected to device:", connectedDevice);
-
-      // Discover services and characteristics (if needed)
       await connectedDevice.discoverAllServicesAndCharacteristics();
-      console.log("Discovered services and characteristics");
 
-      // Write to the characteristic (replace with actual UUIDs)
       const serviceUUID = "B00B";
       const characteristicUUID = "FEED";
 
       await connectedDevice.writeCharacteristicWithResponseForService(
         serviceUUID,
         characteristicUUID,
-        Buffer.from(payloadString).toString("base64") // Convert to base64
+        Buffer.from(payloadString).toString("base64")
       );
-      console.log("Payload sent to device");
-
       Alert.alert("Success", "Schedule sent to BLE device");
     } catch (error) {
-      console.error("Failled to send scehdule", error);
-      Alert.alert("Error", error.message);
+      console.error("Failed to send schedule", error);
+      Alert.alert("Error", error.message || String(error));
     }
   };
 
   const handleNavigateToHome = () => {
     navigation.navigate("Home", { bleDevice });
+  };
+
+  // Web time picker handler
+  const handleWebTimeChange = (lightType, timeType, event) => {
+    const time = event.target.value;
+    setSchedule({
+      ...schedule,
+      [`${lightType}${timeType}`]: time,
+    });
   };
 
   return (
@@ -183,19 +207,49 @@ export default function SchedulerScreen({ route }) {
           <Text style={styles.label}>
             {lightType.replace(/([A-Z])/g, " $1").trim()} Start
           </Text>
-          <TouchableOpacity onPress={() => showDatePicker(lightType, "Start")}>
-            <Text style={styles.timeText}>
-              {schedule[`${lightType}Start`] || "Select Time"}
-            </Text>
-          </TouchableOpacity>
+          {isMobileApp ? (
+            <TouchableOpacity
+              onPress={() => showDatePicker(lightType, "Start")}
+            >
+              <Text style={styles.timeText}>
+                {schedule[`${lightType}Start`] || "Select Time"}
+              </Text>
+            </TouchableOpacity>
+          ) : (
+            <input
+              type="time"
+              value={schedule[`${lightType}Start`] || ""}
+              onChange={(e) => handleWebTimeChange(lightType, "Start", e)}
+              style={{
+                marginBottom: 10,
+                padding: 8,
+                borderRadius: 5,
+                border: `1px solid ${colors.border}`,
+              }}
+            />
+          )}
           <Text style={styles.label}>
             {lightType.replace(/([A-Z])/g, " $1").trim()} End
           </Text>
-          <TouchableOpacity onPress={() => showDatePicker(lightType, "End")}>
-            <Text style={styles.timeText}>
-              {schedule[`${lightType}End`] || "Select Time"}
-            </Text>
-          </TouchableOpacity>
+          {isMobileApp ? (
+            <TouchableOpacity onPress={() => showDatePicker(lightType, "End")}>
+              <Text style={styles.timeText}>
+                {schedule[`${lightType}End`] || "Select Time"}
+              </Text>
+            </TouchableOpacity>
+          ) : (
+            <input
+              type="time"
+              value={schedule[`${lightType}End`] || ""}
+              onChange={(e) => handleWebTimeChange(lightType, "End", e)}
+              style={{
+                marginBottom: 10,
+                padding: 8,
+                borderRadius: 5,
+                border: `1px solid ${colors.border}`,
+              }}
+            />
+          )}
         </View>
       ))}
       <Text style={styles.title}>Assign Schedule to Days</Text>
@@ -222,13 +276,15 @@ export default function SchedulerScreen({ route }) {
         onPress={handleNavigateToHome}
         color={colors.buttonBackground}
       />
-      <DateTimePickerModal
-        isVisible={isDatePickerVisible}
-        mode="time"
-        isDarkModeEnabled={true}
-        onConfirm={handleConfirm}
-        onCancel={hideDatePicker}
-      />
+      {isMobileApp && (
+        <DateTimePickerModal
+          isVisible={isDatePickerVisible}
+          mode="time"
+          isDarkModeEnabled={true}
+          onConfirm={handleConfirm}
+          onCancel={hideDatePicker}
+        />
+      )}
     </ScrollView>
   );
 }

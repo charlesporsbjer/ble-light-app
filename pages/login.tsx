@@ -47,10 +47,10 @@ export default function LoginScreen() {
     setIsConnecting(true);
     try {
       // const device = await bleManager.connectToDevice(deviceID);
-      
+
       // for now let's just pretend we connected to a device
-      const device = { id: deviceID, name: "Mock Device" }
-      
+      const device = { id: deviceID, name: "Mock Device" };
+
       console.log("Connected to device:", device);
       await AsyncStorage.setItem("deviceID", deviceID);
       navigation.navigate("Home", { bleDevice: device });

@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "my-app",
-    "slug": "my-app",
+    "slug": "light-app",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -25,20 +25,37 @@
       ]
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSBluetoothAlwaysUsageDescription": "This app uses Bluetooth to connect to nearby devices.",
+        "NSBluetoothPeripheralUsageDescription": "This app uses Bluetooth to communicate with peripherals.",
+        "ITSAppUsesNonExemptEncryption": false
+      },
+      "bundleIdentifier": "com.anonymous.myapp"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.anonymous.myapp"
+      "package": "com.anonymous.myapp",
+      "permissions": [
+        "android.permission.BLUETOOTH",
+        "android.permission.BLUETOOTH_ADMIN",
+        "android.permission.BLUETOOTH_CONNECT"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
       "react-native-ble-plx"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "06fecedc-f915-4ffa-acfc-d75bab5fe911"
+      }
+    },
+    "owner": "chawp"
   }
 }
