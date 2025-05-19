@@ -7,7 +7,6 @@ import colors from "../components/colors";
 export default function HomeScreen({ route }) {
   const { bleDevice } = route.params;
   const [isLightOn, setIsLightOn] = useState(false);
-  const [redLightIntensity, setRedLightIntensity] = useState(0);
   const [sunlightIntensity, setSunlightIntensity] = useState(0);
   const navigation = useNavigation();
 
@@ -36,21 +35,20 @@ export default function HomeScreen({ route }) {
       sendBLECommand("light_off");
     } else {
       // If light turns ON, send the current intensity values
-      sendBLECommand(`R${redLightIntensity};S${sunlightIntensity}`);
+      sendBLECommand(`R${sunlightIntensity}`);
     }
   };
 
   // Auto-update BLE when intensities change and light is ON.
   useEffect(() => {
     if (isLightOn) {
-      sendBLECommand(`R${redLightIntensity};S${sunlightIntensity}`);
+      sendBLECommand(`R${sunlightIntensity}`);
     }
-  }, [redLightIntensity, sunlightIntensity]);
+  }, [sunlightIntensity]);
 
   const handleNavigateToScheduler = () => {
     navigation.navigate("Scheduler", {
       bleDevice,
-      currentRedIntensity: redLightIntensity,
       currentSunlightIntensity: sunlightIntensity,
     });
   };
@@ -70,32 +68,18 @@ export default function HomeScreen({ route }) {
       {isLightOn && (
         <>
           <View style={styles.sliderContainer}>
-            <Text style={styles.label}>Red Light Intensity</Text>
-            <Slider
-              value={redLightIntensity}
-              onValueChange={setRedLightIntensity}
-              minimumValue={0}
-              maximumValue={100}
-              step={1}
-              style={styles.slider}
-              minimumTrackTintColor={colors.buttonBackground}
-              maximumTrackTintColor={colors.border}
-            />
-            <Text style={styles.intensityValue}>{redLightIntensity}%</Text>
-          </View>
-          <View style={styles.sliderContainer}>
             <Text style={styles.label}>Sunlight Intensity</Text>
             <Slider
               value={sunlightIntensity}
               onValueChange={setSunlightIntensity}
-              minimumValue={0}
-              maximumValue={100}
+              minimumValue={1}
+              maximumValue={254}
               step={1}
               style={styles.slider}
               minimumTrackTintColor={colors.buttonBackground}
               maximumTrackTintColor={colors.border}
             />
-            <Text style={styles.intensityValue}>{sunlightIntensity}%</Text>
+            <Text style={styles.intensityValue}>{sunlightIntensity}</Text>
           </View>
         </>
       )}

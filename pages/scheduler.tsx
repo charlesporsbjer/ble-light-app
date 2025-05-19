@@ -41,18 +41,11 @@ export default function SchedulerScreen({ route }) {
     manager = new BleManager();
   }
 
-  const {
-    bleDevice,
-    currentRedIntensity = 0,
-    currentSunlightIntensity = 0,
-  } = route.params || {};
+  const { bleDevice, currentSunlightIntensity = 0 } = route.params || {};
 
   // Receive the current intensity as reference but do NOT override schedule
 
   const [schedule, setSchedule] = useState({
-    redLightStart: null,
-    redLightEnd: null,
-    redLightIntensity: currentRedIntensity,
     sunlightStart: null,
     sunlightEnd: null,
     sunLightIntensity: currentSunlightIntensity,
@@ -171,38 +164,22 @@ export default function SchedulerScreen({ route }) {
     <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.title}>Set Daily Schedule for Light</Text>
       <View style={styles.sliderContainer}>
-        <Text style={styles.label}>Red Light Intensity</Text>
-        <Slider
-          value={schedule.redLightIntensity}
-          onValueChange={(value) =>
-            setSchedule({ ...schedule, redLightIntensity: value })
-          }
-          minimumValue={0}
-          maximumValue={100}
-          step={1}
-          style={styles.slider}
-          minimumTrackTintColor={colors.buttonBackground}
-          maximumTrackTintColor={colors.border}
-        />
-        <Text style={styles.intensityValue}>{schedule.redLightIntensity}%</Text>
-      </View>
-      <View style={styles.sliderContainer}>
         <Text style={styles.label}>Sunlight Intensity</Text>
         <Slider
           value={schedule.sunLightIntensity}
           onValueChange={(value) =>
             setSchedule({ ...schedule, sunLightIntensity: value })
           }
-          minimumValue={0}
-          maximumValue={100}
+          minimumValue={1}
+          maximumValue={254}
           step={1}
           style={styles.slider}
           minimumTrackTintColor={colors.buttonBackground}
           maximumTrackTintColor={colors.border}
         />
-        <Text style={styles.intensityValue}>{schedule.sunLightIntensity}%</Text>
+        <Text style={styles.intensityValue}>{schedule.sunLightIntensity}</Text>
       </View>
-      {["redLight", "sunlight"].map((lightType) => (
+      {["sunlight"].map((lightType) => (
         <View key={lightType} style={styles.inputContainer}>
           <Text style={styles.label}>
             {lightType.replace(/([A-Z])/g, " $1").trim()} Start
